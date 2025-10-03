@@ -1,0 +1,20 @@
+# open new bash terminal chage directory to kafka 
+cd C:\\JavaRnD\\kafka-3.9.0-src
+# Start the ZooKeeper service
+bin/zookeeper-server-start.sh config/zookeeper.properties
+
+# open new bash terminal chage directory to kafka 
+cd C:\\JavaRnD\\kafka-3.9.0-src
+
+# Start the Kafka broker service
+bin/kafka-server-start.sh config/server.properties
+
+# open new bash terminal chage directory to kafka 
+cd C:\\JavaRnD\\kafka-3.9.0-src
+# create topic
+bin/kafka-topics.sh --create --topic movies --bootstrap-server localhost:9092
+
+# open new bash terminal chage directory to kafka 
+cd C:\\JavaRnD\\kafka-3.9.0-src
+# create consumer
+bin/kafka-console-consumer.sh --topic movies --from-beginning --bootstrap-server localhost:9092
