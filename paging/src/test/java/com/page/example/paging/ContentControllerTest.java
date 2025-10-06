@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.List;
 
@@ -33,6 +34,12 @@ class ContentControllerTest {
             Mockito.when(repo.findAll(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(new Movie("Test", "genre"))));
             return repo;
+        }
+
+        @Bean
+        @SuppressWarnings("unchecked")
+        public KafkaTemplate<String, String> kafkaTemplate() {
+            return (KafkaTemplate<String, String>) Mockito.mock(KafkaTemplate.class);
         }
     }
 

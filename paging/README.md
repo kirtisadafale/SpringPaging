@@ -31,7 +31,7 @@ Set-Location .\paging
 
 ## Endpoints
 
-- GET /movies?pageNo=0&pageSize=10 - returns a paged list of movies
+-- GET /movies?pageNo=1&pageSize=10 - returns a paged list of movies (pageNo is 1-based)
 - POST /movies - accepts JSON movie payload and publishes it to the `movies` Kafka topic (the consumer persists it and writes an audit record)
 
 Example POST payload:
@@ -42,6 +42,29 @@ Example POST payload:
   "genre": "Sci-Fi"
 }
 ```
+ 
+ For manual verification:
+ 
+ Location: http://localhost:8080/movies/The%20Matrix
+ JSON body with "check": "http://localhost:8080/movies/The%20Matrix"
+
+ Example paged response (GET /movies?pageNo=1&pageSize=10):
+
+ ```json
+ {
+   "content": [ { "id": 1, "name": "Inception", "genre": "Sci-Fi" } ],
+   "currentPage": 1,
+   "pageSize": 10,
+   "totalElements": 42,
+   "totalPages": 5,
+   "showingFrom": 1,
+   "showingTo": 1,
+   "hasNext": true,
+   "hasPrevious": false,
+   "nextPageUrl": "/movies?pageNo=2&pageSize=10",
+   "prevPageUrl": null
+ }
+ ```
 
 ## Kafka
 
