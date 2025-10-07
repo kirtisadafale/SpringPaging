@@ -89,6 +89,13 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+		<!-- small bcrypt library for generating hashes in the helper tool -->
+		<dependency>
+			<groupId>org.mindrot</groupId>
+			<artifactId>jbcrypt</artifactId>
+			<version>0.4</version>
+		</dependency>
+
 		<!-- Ensure jackson-databind is available at compile time for ObjectMapper -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>

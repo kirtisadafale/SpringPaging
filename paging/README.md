@@ -152,6 +152,42 @@ Notes
 - `spring-boot-devtools` was removed from dependencies due to a RestartClassLoader issue that caused NoClassDefFoundError during startup in some environments. If you need devtools behavior, add it back and test carefully.
 - If you want help adding Flyway migrations or Kafka consumer retry/DLQ handling, tell me which to do next and I'll add it.
 
+### Generating a BCrypt hash and seeding an admin user (example)
+
+This project includes two tiny helpers to help you create a BCrypt-hashed password and seed an example admin user for production or staging testing.
+
+1) Generate a BCrypt hash locally using the bundled helper (Maven exec):
+
+```powershell
+Set-Location .\paging
+.\mvnw.cmd -Dexec.mainClass=com.page.example.paging.SimpleBcrypt -Dexec.args="your-plaintext-password" exec:java
+# If the Maven exec approach fails you can run the helper directly using the compiled classes and the jBCrypt JAR:
+
+# Direct Java (Windows PowerShell):
+# & 'C:\Program Files\Eclipse Adoptium\jdk-21.0.6.7-hotspot\bin\java.exe' -cp "target\classes;C:\Users\<your-user>\.m2\repository\org\mindrot\jbcrypt\0.4\jbcrypt-0.4.jar" com.page.example.paging.SimpleBcrypt your-plaintext-password
+# Output will be the BCrypt hash you should paste into the next step
+```
+
+2) Seed the DB (safe options):
+
+- Use the example SQL script (edit and replace <bcrypt-hash>):
+
+  src/main/resources/examples/seed-admin-mysql.sql
+
+  Then run it against your MySQL instance (for example using the mysql client):
+
+```powershell
+mysql -u root -p paging_db < src\main\resources\examples\seed-admin-mysql.sql
+```
+
+- Or add the hash into the Flyway seed migration `src/main/resources/db/migration/V3__seed_example_admin.sql` (it contains a placeholder) and run the migration with the `prod` profile or via the Flyway Maven plugin:
+
+```powershell
+.\mvnw.cmd -DskipTests -Dspring.profiles.active=prod flyway:migrate
+```
+
+Important: do NOT commit real plaintext passwords into your repository. If you store a seed migration with a hashed password, rotate it after the first successful deploy.
+
 ## Troubleshooting
 
 - "NoClassDefFoundError: PagedResponse" during startup: this was caused by DevTools RestartClassLoader in some environments. We removed DevTools to resolve it.
