@@ -31,6 +31,9 @@ public class MovieAudit {
     @Column(name = "event_time")
     private Instant eventTime;
 
+    @Column(name = "correlation_id")
+    private String correlationId;
+
     public MovieAudit() {
     }
 
@@ -40,6 +43,15 @@ public class MovieAudit {
         this.genre = genre;
         this.eventType = eventType;
         this.eventTime = eventTime;
+    }
+
+    public MovieAudit(Long movieId, String name, String genre, String eventType, Instant eventTime, String correlationId) {
+        this.movieId = movieId;
+        this.name = name;
+        this.genre = genre;
+        this.eventType = eventType;
+        this.eventTime = eventTime;
+        this.correlationId = correlationId;
     }
 
     public Long getId() {
@@ -88,5 +100,13 @@ public class MovieAudit {
 
     public void setEventTime(Instant eventTime) {
         this.eventTime = eventTime;
+    }
+
+    public String getCorrelationId() {
+        return correlationId;
+    }
+
+    public void setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
     }
 }
