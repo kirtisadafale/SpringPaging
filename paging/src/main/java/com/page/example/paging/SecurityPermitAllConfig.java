@@ -17,6 +17,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 // explicitly active only when neither test nor prod profiles are set, by adding
 // @Profile("!test & !prod") and keeping the @ConditionalOnMissingBean guard
+// This makes intent explicit: permit-all security is only active in non-test,
+// non-prod runs (dev/local), preventing collisions with any test-global
+// permit-all beans and still allowing production security to be enabled under
+// prod.
 @Profile("!test & !prod")
 // Spring Security forbids multiple filter chains that both match any request
 // (anyRequest()). The test-global config created such a chain and so did
