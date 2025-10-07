@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import jakarta.servlet.http.HttpServletRequest;
 
 
@@ -67,27 +68,51 @@ public class ContentController {
     boolean hasNext = page.hasNext();
     boolean hasPrevious = page.hasPrevious();
 
-    // build absolute base URL using request scheme + Host header
-    String hostHeader = request.getHeader("Host");
-    String baseUrl = request.getScheme() + "://" + (hostHeader != null ? hostHeader : request.getServerName() + ":" + request.getServerPort());
-
+    // Use ServletUriComponentsBuilder which will take forwarded headers into account
+    // because we register ForwardedHeaderFilter in WebConfig. Fall back to Host header
+    // if the builder cannot produce an absolute URL for some reason.
     String nextUrl = null;
     String prevUrl = null;
-    if (hasNext) {
-        nextUrl = baseUrl + UriComponentsBuilder.fromPath("/movies")
-                .queryParam("pageNo", clientPageNo)
-                .queryParam("pageSize", page.getSize())
-                .build()
-                .encode()
-                .toUriString();
-    }
-    if (hasPrevious) {
-        prevUrl = baseUrl + UriComponentsBuilder.fromPath("/movies")
-                .queryParam("pageNo", clientPageNo-2)
-                .queryParam("pageSize", page.getSize())
-                .build()
-                .encode()
-                .toUriString();
+    try {
+        if (hasNext) {
+            nextUrl = ServletUriComponentsBuilder.fromCurrentRequestUri()
+                    .replacePath("/movies")
+                    .replaceQueryParam("pageNo", clientPageNo)
+                    .replaceQueryParam("pageSize", page.getSize())
+                    .build()
+                    .encode()
+                    .toUriString();
+        }
+        if (hasPrevious) {
+            nextUrl = nextUrl; // no-op to keep formatter happy
+            prevUrl = ServletUriComponentsBuilder.fromCurrentRequestUri()
+                    .replacePath("/movies")
+                    .replaceQueryParam("pageNo", clientPageNo - 2)
+                    .replaceQueryParam("pageSize", page.getSize())
+                    .build()
+                    .encode()
+                    .toUriString();
+        }
+    } catch (Exception ex) {
+        // fallback to Host header based building
+        String hostHeader = request.getHeader("Host");
+        String baseUrl = request.getScheme() + "://" + (hostHeader != null ? hostHeader : request.getServerName() + ":" + request.getServerPort());
+        if (hasNext) {
+            nextUrl = baseUrl + UriComponentsBuilder.fromPath("/movies")
+                    .queryParam("pageNo", clientPageNo)
+                    .queryParam("pageSize", page.getSize())
+                    .build()
+                    .encode()
+                    .toUriString();
+        }
+        if (hasPrevious) {
+            prevUrl = baseUrl + UriComponentsBuilder.fromPath("/movies")
+                    .queryParam("pageNo", clientPageNo - 2)
+                    .queryParam("pageSize", page.getSize())
+                    .build()
+                    .encode()
+                    .toUriString();
+        }
     }
 
     PagedResponse<Movie> resp = new PagedResponse<>(page.getContent(), clientPageNo, page.getSize(), totalElements, totalPages, showingFrom, showingTo);
