@@ -21,7 +21,7 @@ import org.springframework.security.web.SecurityFilterChain;
 // non-prod runs (dev/local), preventing collisions with any test-global
 // permit-all beans and still allowing production security to be enabled under
 // prod.
-@Profile("!test & !prod")
+@Profile("dev")
 // Spring Security forbids multiple filter chains that both match any request
 // (anyRequest()). The test-global config created such a chain and so did
 // SecurityPermitAllConfig. Keeping
