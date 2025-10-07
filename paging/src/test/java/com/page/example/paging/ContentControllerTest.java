@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ContentController.class)
-@Import(ContentControllerTest.TestConfig.class)
+@Import({ContentControllerTest.TestConfig.class, TestSecurityConfig.class})
 class ContentControllerTest {
 
     @Autowired
