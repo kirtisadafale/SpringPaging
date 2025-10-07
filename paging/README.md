@@ -118,8 +118,34 @@ Set-Location .\paging
 
  - You can also run the Flyway CLI in your environment against the same JDBC URL configured in `application.properties`.
 
+## Production deployment
+
+When deploying to production, run the application with the `prod` profile so Flyway migrations are applied and production-grade settings are used (security enabled and Hibernate auto-ddl disabled).
+
+Key points:
+
+- Start the app with the `prod` profile (either via JVM argument or environment variable). This enables the `application-prod.properties` settings where Flyway is enabled and `spring.jpa.hibernate.ddl-auto` is set to `none`.
+- Flyway migrations will run automatically at startup when a DataSource is available. If you prefer to run migrations separately (for example in CI/CD), use the Flyway Maven plugin or the Flyway CLI.
+- Security: the app enables HTTP Basic authentication when the `prod` profile is active (see `SecurityConfig`). Make sure to configure appropriate credentials or integrate with your identity provider before exposing the app.
+- If the app runs behind a proxy/load-balancer, ensure the proxy sets standard forwarded headers (for example `X-Forwarded-Host`, `X-Forwarded-Proto`, `X-Forwarded-Port` or the `Forwarded` header) so absolute next/prev links are generated correctly.
+
+Example PowerShell commands to build and run with the `prod` profile:
+
+```powershell
+Set-Location .\paging
+.\mvnw.cmd -DskipTests -Dspring.profiles.active=prod clean package
+& 'C:\Program Files\Eclipse Adoptium\jdk-21.0.6.7-hotspot\bin\java.exe' -Dspring.profiles.active=prod -jar target\paging-0.0.1-SNAPSHOT.jar
+```
+
+Run Flyway migrations explicitly via Maven (optional):
+
+```powershell
+Set-Location .\paging
+.\mvnw.cmd -DskipTests -Dspring.profiles.active=prod flyway:migrate
+```
+
 Notes
- - The included SQL uses `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` which is compatible with MySQL 8+ and H2 used by tests. If your production DB does not support `IF NOT EXISTS`, replace the migration with a DB-specific safe script or run a controlled pre-check before applying.
+- The included SQL uses `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` which is compatible with MySQL 8+ and H2 used by tests. If your production DB does not support `IF NOT EXISTS`, replace the migration with a DB-specific safe script or run a controlled pre-check before applying.
 
 ## Notes
 
