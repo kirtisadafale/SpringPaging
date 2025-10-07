@@ -192,3 +192,44 @@ Important: do NOT commit real plaintext passwords into your repository. If you s
 
 - "NoClassDefFoundError: PagedResponse" during startup: this was caused by DevTools RestartClassLoader in some environments. We removed DevTools to resolve it.
 - "No qualifying bean of type 'com.fasterxml.jackson.databind.ObjectMapper'": ensure `jackson-databind` is on the classpath and the application defines an ObjectMapper bean. The project includes an ObjectMapper bean in `PagingApplication`.
+
+
+Runnning Application with -Dspring-boot.run.profiles=prod
+
+I'll show short, actionable ways to run your app with the prod profile set (command-line + VS Code + IntelliJ + environment-var options). Pick whichever matches how you run the app.
+
+What I'll cover
+
+Run the packaged jar
+Run with the Maven wrapper (spring-boot:run) — quick and recommended during dev
+Pass a JVM arg to a direct java launch
+Use an environment variable (PowerShell)
+Add to a VS Code Java launch configuration (launch.json)
+Add to an IntelliJ Run/Debug configuration
+Run the packaged jar (java -jar)
+Good for production-like runs after mvn package
+Command (PowerShell):
+Run via Maven wrapper (recommended for quick local runs)
+Option A — let the Spring Boot plugin set the profile:
+Option B — pass JVM system property (if you need to set other JVM args):
+Run tests or Maven goals with the profile
+Passing -Dspring.profiles.active=prod to Maven will set the system property for the JVM(s) spawned by Maven/Surefire in most cases:
+For the spring-boot:run plugin prefer the forms in (2) (spring-boot.run.profiles or spring-boot.run.jvmArguments).
+Use an environment variable (PowerShell)
+Spring Boot also reads SPRING_PROFILES_ACTIVE env var, which is handy in CI or PowerShell sessions:
+Add to VS Code launch configuration
+If you run/ debug from VS Code, add a Java launch entry with vmArgs. Create or edit launch.json:
+Alternatively, set environment variable in the same config:
+Add to IntelliJ Run/Debug configuration
+Open Run → Edit Configurations → select your application configuration
+Add to "VM options":
+Or use the "Environment variables" field:
+Quick tips / troubleshooting
+
+For mvn spring-boot:run prefer -Dspring-boot.run.profiles=prod (that is the plugin’s documented property).
+-D passed directly after mvn usually sets Maven properties and is visible to plugin configuration — but for JVM you can use spring-boot.run.jvmArguments.
+If you use a launcher/IDE that reuses an existing process, ensure you restart the process after changing vmArgs or env vars.
+When running in Windows PowerShell remember ; is not needed between commands; use separate lines or ; if you do chain commands.
+
+Run BCryptGenrator
+java -cp "target\classes;C:\Users\anant\.m2\repository\org\mindrot\jbcrypt\0.4\jbcrypt-0.4.jar" com.page.example.paging.SimpleBcrypt admin_password
