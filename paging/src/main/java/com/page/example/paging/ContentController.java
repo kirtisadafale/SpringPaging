@@ -13,6 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.kafka.support.KafkaHeaders;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -84,7 +88,6 @@ public class ContentController {
                     .toUriString();
         }
         if (hasPrevious) {
-            nextUrl = nextUrl; // no-op to keep formatter happy
             prevUrl = ServletUriComponentsBuilder.fromCurrentRequestUri()
                     .replacePath("/movies")
                     .replaceQueryParam("pageNo", clientPageNo - 2)
@@ -136,8 +139,14 @@ public class ContentController {
         
         try {
             // movie will be saved by the Kafka consumer; controller only enqueues the event
-            String payload = objectMapper.writeValueAsString(movie);
-            kafkaTemplate.send(moviesTopic, payload);
+        String payload = objectMapper.writeValueAsString(movie);
+        // include correlation id from MDC (set by correlationIdFilter) in Kafka headers
+        String correlationId = MDC.get("correlationId");
+        Message<String> msg = MessageBuilder.withPayload(payload)
+            .setHeader(KafkaHeaders.TOPIC, moviesTopic)
+            .setHeader("X-Correlation-ID", correlationId)
+            .build();
+        kafkaTemplate.send(msg);
             log.info("Enqueued movie create event to topic {}", moviesTopic);
 
             // build a link where the caller can check for the movie after processing
