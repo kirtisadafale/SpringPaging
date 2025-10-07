@@ -91,6 +91,36 @@ If you see connection errors from the application on startup or when sending mes
 
 For production use, replace `ddl-auto=update` with explicit migrations (Flyway or Liquibase).
 
+### Database migrations (Flyway)
+
+This project includes a Flyway migration to add the `correlation_id` column to the `movie_audit` table so that correlation IDs are persisted for traceability.
+
+- Migration file: `src/main/resources/db/migration/V1__add_correlation_id_to_movie_audit.sql`
+- Flyway is included as a dependency so migrations run automatically on application startup when Flyway is enabled and a DataSource is available.
+
+Local / development
+ - If you want Flyway to run locally (recommended for testing), ensure the DB configured in `application.properties` is available and start the app normally. Flyway will run migrations automatically at startup.
+ - If you prefer Hibernate-managed schema during development, you can keep `spring.jpa.hibernate.ddl-auto=update` for dev only and disable Flyway by setting `spring.flyway.enabled=false` in your local properties or profile.
+
+Production / controlled upgrades
+ - Use Flyway to manage schema changes in production. Typical steps:
+   1. Add the migration SQL under `src/main/resources/db/migration` (already done).
+   2. Deploy the new application artifact to your staging/production environment; Flyway will run migrations during application startup. We recommend setting `spring.jpa.hibernate.ddl-auto=none` or `validate` in production to avoid Hibernate altering the schema.
+   3. Consider using `spring.flyway.baseline-on-migrate=true` if you are introducing Flyway into an existing database with pre-existing schema.
+
+Running Flyway manually
+ - If you prefer to run Flyway commands manually (for example, in CI), you can use the Flyway CLI or Maven plugin. Example using Maven plugin:
+
+```powershell
+Set-Location .\paging
+.\mvnw.cmd -DskipTests flyway:migrate
+```
+
+ - You can also run the Flyway CLI in your environment against the same JDBC URL configured in `application.properties`.
+
+Notes
+ - The included SQL uses `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` which is compatible with MySQL 8+ and H2 used by tests. If your production DB does not support `IF NOT EXISTS`, replace the migration with a DB-specific safe script or run a controlled pre-check before applying.
+
 ## Notes
 
 - `spring-boot-devtools` was removed from dependencies due to a RestartClassLoader issue that caused NoClassDefFoundError during startup in some environments. If you need devtools behavior, add it back and test carefully.
