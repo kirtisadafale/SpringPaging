@@ -48,7 +48,6 @@ public class ContentController {
                                          HttpServletRequest request) {
 
         System.out.println("Page No: " + pageNo + " Page Size: " + pageSize);
-        //TODO: correct pageNo to be 0-based internally, but 1-based for clients
         Pageable pageable = PageRequest.of(pageNo, pageSize);
         var page = movieRepo.findAll(pageable);
         long totalElements = page.getTotalElements();
@@ -76,7 +75,7 @@ public class ContentController {
     String prevUrl = null;
     if (hasNext) {
         nextUrl = baseUrl + UriComponentsBuilder.fromPath("/movies")
-                .queryParam("pageNo", clientPageNo + 1)
+                .queryParam("pageNo", clientPageNo)
                 .queryParam("pageSize", page.getSize())
                 .build()
                 .encode()
@@ -84,7 +83,7 @@ public class ContentController {
     }
     if (hasPrevious) {
         prevUrl = baseUrl + UriComponentsBuilder.fromPath("/movies")
-                .queryParam("pageNo", clientPageNo - 1)
+                .queryParam("pageNo", clientPageNo-2)
                 .queryParam("pageSize", page.getSize())
                 .build()
                 .encode()
@@ -117,7 +116,7 @@ public class ContentController {
             log.info("Enqueued movie create event to topic {}", moviesTopic);
 
             // build a link where the caller can check for the movie after processing
-        // Build absolute URL using request scheme + Host header so clients can follow the Location
+        // Build absolute URL using request scheme(eg."http") + Host header so clients can follow the Location
         String hostHeader = request.getHeader("Host");
         String baseUrl = request.getScheme() + "://" + (hostHeader != null ? hostHeader : request.getServerName() + ":" + request.getServerPort());
         // use path variable for the check link (e.g. /movies/{name}) and encode it
