@@ -44,6 +44,9 @@ public class ContentController {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private RateLimiterService rateLimiterService;
+
     @Value("${app.kafka.topic.movies:movies}")
     private String moviesTopic;
 
@@ -134,6 +137,11 @@ public class ContentController {
         if (movie == null || movie.getName() == null || movie.getName().isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", "movie and movie.name must be provided"));
+        }
+
+        // Rate limit unauthenticated/public POSTs to /movies
+        if (!rateLimiterService.isAllowed(request)) {
+            return ResponseEntity.status(429).body(Map.of("error", "too many requests"));
         }
 
         

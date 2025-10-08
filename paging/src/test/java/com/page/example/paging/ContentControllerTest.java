@@ -41,6 +41,14 @@ class ContentControllerTest {
         public KafkaTemplate<String, String> kafkaTemplate() {
             return (KafkaTemplate<String, String>) Mockito.mock(KafkaTemplate.class);
         }
+
+        @Bean
+        public RateLimiterService rateLimiterService() {
+            RateLimiterService rl = Mockito.mock(RateLimiterService.class);
+            Mockito.when(rl.isAllowed(org.mockito.ArgumentMatchers.<jakarta.servlet.http.HttpServletRequest>any()))
+                .thenReturn(true);
+            return rl;
+        }
     }
 
     @Test
