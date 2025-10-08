@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.Customizer;
 import org.springframework.context.annotation.Bean;
@@ -30,8 +29,10 @@ public class SecurityConfig {
             )
             
             // Keep CSRF enabled, but ignore it for the public POST /movies endpoint only.
-            // This reduces attack surface compared to disabling CSRF globally.
-            .csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/movies", "POST")))
+            // Use a lambda RequestMatcher to avoid a direct reference to AntPathRequestMatcher.
+            .csrf(csrf -> csrf.ignoringRequestMatchers(request ->
+                "POST".equalsIgnoreCase(request.getMethod()) && "/movies".equals(request.getServletPath())
+            ))
             .httpBasic(Customizer.withDefaults());
 
         return http.build();
