@@ -20,14 +20,11 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // http
-        //     .authorizeHttpRequests(authorize -> authorize
-        //         // Allow unauthenticated clients to POST new movies (async enqueue endpoint)
-        //         .requestMatchers(HttpMethod.POST, "/movies").permitAll()
-        //         .anyRequest().authenticated()
-        //     )
-             http
+        http
             .authorizeHttpRequests(authorize -> authorize
+                // Allow unauthenticated users to create new movies (POST /movies)
+                // This is needed to allow clients to enqueue new movies for processing.
+                .requestMatchers(HttpMethod.POST, "/movies").permitAll()
                 .anyRequest().authenticated()
             )
             
