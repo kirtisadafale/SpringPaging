@@ -5,6 +5,7 @@ import javax.sql.DataSource;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.Customizer;
 import org.springframework.context.annotation.Bean;
@@ -19,10 +20,20 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
+        // http
+        //     .authorizeHttpRequests(authorize -> authorize
+        //         // Allow unauthenticated clients to POST new movies (async enqueue endpoint)
+        //         .requestMatchers(HttpMethod.POST, "/movies").permitAll()
+        //         .anyRequest().authenticated()
+        //     )
+             http
             .authorizeHttpRequests(authorize -> authorize
                 .anyRequest().authenticated()
             )
+            
+            // This is an API; disable CSRF (forms aren't used). If you prefer CSRF protection,
+            // change this to ignore only the /movies POST endpoint instead of disabling globally.
+            .csrf(csrf -> csrf.disable())
             .httpBasic(Customizer.withDefaults());
 
         return http.build();
