@@ -22,7 +22,7 @@ import jakarta.servlet.http.HttpServletRequest;
  * - app.rateLimit.windowSeconds = sliding window used to derive refill rate (default 60)
  */
 @Service
-public class RateLimiterService {
+public class RateLimiterService implements RateLimiter {
 
     private final int capacity;
     private final double refillPerSecond;

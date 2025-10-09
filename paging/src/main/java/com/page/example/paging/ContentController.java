@@ -45,7 +45,7 @@ public class ContentController {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private RateLimiterService rateLimiterService;
+    private RateLimiter rateLimiterService;
 
     @Value("${app.kafka.topic.movies:movies}")
     private String moviesTopic;

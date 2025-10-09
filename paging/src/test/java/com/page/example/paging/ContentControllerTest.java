@@ -43,8 +43,8 @@ class ContentControllerTest {
         }
 
         @Bean
-        public RateLimiterService rateLimiterService() {
-            RateLimiterService rl = Mockito.mock(RateLimiterService.class);
+        public RateLimiter rateLimiterService() {
+            RateLimiter rl = Mockito.mock(RateLimiter.class);
             Mockito.when(rl.isAllowed(org.mockito.ArgumentMatchers.<jakarta.servlet.http.HttpServletRequest>any()))
                 .thenReturn(true);
             return rl;
