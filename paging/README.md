@@ -188,6 +188,215 @@ mysql -u root -p paging_db < src\main\resources\examples\seed-admin-mysql.sql
 
 Important: do NOT commit real plaintext passwords into your repository. If you store a seed migration with a hashed password, rotate it after the first successful deploy.
 
+## Redis-backed rate limiter (optional)
+
+This project includes an optional Redis-backed token-bucket rate limiter implemented in `RedisRateLimiterService` and backed by a Lua script (`src/main/resources/redis/token_bucket.lua`). The Redis implementation is disabled by default. To enable it at runtime, set the following property:
+
+```
+app.rateLimiter.type=redis
+```
+
+When enabled, the app will use Redis for token-bucket operations. This is useful for horizontally-scaled deployments where a central rate-limiter state is required.
+
+Running the Redis integration test (CI-friendly)
+
+The project includes a Testcontainers-based integration test that starts a temporary Redis container and verifies the Redis-backed limiter end-to-end. The test uses the `test` profile and the test properties in `src/test/resources/application-test.properties`.
+
+Run Redis integration test locally (PowerShell)
+
+If you want to run only the Testcontainers-based Redis integration test on your machine (recommended for a quick, isolated check), run the following from PowerShell. This requires Docker Desktop (or another working Docker engine) so Testcontainers can start a temporary Redis container.
+
+Prerequisites:
+- Docker Desktop (running and accessible to Testcontainers)
+- Java 17+ (JDK used by the Maven wrapper)
+
+PowerShell example (from the project root):
+
+```powershell
+Set-Location .\paging
+# Quote the -Dtest value in PowerShell so Maven parses the property correctly
+.\mvnw.cmd -Dtest="com.page.example.paging.RedisRateLimiterIntegrationTest" test
+```
+
+Notes and troubleshooting:
+- If Docker is not available, you can point the integration test at a running Redis instance instead of using Testcontainers by setting properties on the command line, for example:
+
+```powershell
+Set-Location .\paging
+.\mvnw.cmd -Dtest="com.page.example.paging.RedisRateLimiterIntegrationTest" -Dapp.rateLimiter.type=redis -Dspring.redis.host=127.0.0.1 -Dspring.redis.port=6379 test
+```
+
+- If you previously saw a Maven error like "Unknown lifecycle phase \".page.example.paging.RedisRateLimiterIntegrationTest\"", make sure you quote the `-Dtest` value exactly as shown above (PowerShell treats arguments differently than bash).
+- If Testcontainers fails to pull images, ensure Docker Desktop has enough resources and that your machine can reach Docker Hub (or configure a local registry mirror).
+- The test uses Testcontainers which will automatically start and stop a temporary Redis container; no manual cleanup is needed.
+
+If you run this in CI, ensure Docker is available on the runner so Testcontainers can start the Redis container. Alternatively, set `app.rateLimiter.type=redis` and point `spring.redis.host` and `spring.redis.port` to an existing Redis instance.
+
+## Running Redis locally (start / stop)
+
+If you need a local Redis instance for manual testing or to run the Redis-backed limiter without Testcontainers, here are a few reliable options. Docker is recommended because it's fast, reproducible, and matches CI.
+
+1) Docker (recommended)
+
+Start a temporary Redis container (binds host 6379 -> container 6379):
+
+```bash
+# bash / PowerShell (works in both terminals)
+docker run --rm -d --name redis-test -p 6379:6379 redis:7.2.2
+```
+
+Verify it's running:
+
+```bash
+docker exec -it redis-test redis-cli ping    # should print PONG
+# or if you have redis-cli installed locally:
+redis-cli -h 127.0.0.1 -p 6379 ping
+```
+
+Stop and remove the container:
+
+```bash
+docker stop redis-test
+# container was started with --rm so it will be removed automatically
+```
+
+Start Redis with no persistence (good for ephemeral test runs):
+
+```bash
+docker run --rm -d --name redis-test -p 6379:6379 redis:7.2.2 redis-server --save "" --appendonly no
+```
+
+2) Docker Compose (useful when running multiple services)
+
+Create `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+services:
+  redis:
+    image: redis:7.2.2
+    ports:
+      - "6379:6379"
+```
+
+Start in background:
+
+```bash
+docker compose up -d
+```
+
+Stop and remove:
+
+```bash
+docker compose down
+```
+
+3) Testcontainers (in tests)
+
+If you run the included Testcontainers-based integration test, you do not need to start Redis manually. Testcontainers manages the Redis lifecycle for each test. Ensure Docker is available on the machine or CI runner.
+
+4) Linux (systemd)
+
+Install and run via package manager (Ubuntu example):
+
+```bash
+sudo apt update
+sudo apt install redis-server -y
+sudo systemctl start redis-server
+sudo systemctl stop redis-server
+```
+
+5) macOS (Homebrew)
+
+```bash
+brew install redis
+brew services start redis    # run in background
+brew services stop redis
+# or run temporarily:
+redis-server /usr/local/etc/redis.conf
+# (stop with Ctrl-C)
+```
+
+6) Windows
+
+- Recommended: run Redis in Docker or WSL2 (install Redis inside WSL and use the Linux commands above).
+- If you have a native Windows Redis build, use its service manager or Task Scheduler to start/stop.
+
+Notes & troubleshooting
+
+- Port conflicts: if host port 6379 is in use, map to a different host port: `-p 6380:6379` and set `spring.redis.port=6380`.
+- Firewalls and Docker Desktop: ensure Docker is running and the container ports are reachable from your local environment.
+- Logs: `docker logs -f redis-test` to stream container logs.
+- Removing leftover container: `docker rm -f redis-test`.
+
+## Local Redis helper scripts
+
+This repo includes a pair of helper scripts to make starting/stopping Redis easier on Windows and development machines. There are two flavors:
+
+- Docker-backed scripts (clean, isolated):
+  - `scripts/start-redis.ps1` / `scripts/stop-redis.ps1` — start/stop a Redis Docker container (recommended if you have Docker).
+  - Usage (PowerShell):
+    ```powershell
+    # start with default name and port
+    .\scripts\start-redis.ps1
+
+    # stop
+    .\scripts\stop-redis.ps1
+    ```
+
+- Local (non-Docker) scripts — useful when you prefer a native/WSL Redis:
+  - `scripts/start-redis-local.ps1` / `scripts/stop-redis-local.ps1` — attempt to start/stop a locally-installed Redis without Docker.
+  - Behavior:
+    - If WSL is present, the scripts try to run `redis-server`/`redis-cli` inside WSL (recommended on Windows).
+    - Otherwise they look for a Windows service named like `redis*` and attempt to start/stop it.
+  - Usage (PowerShell):
+    ```powershell
+    # start Redis in WSL or Windows service
+    .\scripts\start-redis-local.ps1
+
+    # stop
+    .\scripts\stop-redis-local.ps1
+    ```
+
+Recommended workflow
+
+- For CI and isolated tests: use Testcontainers (no manual start needed) or the Docker-backed scripts above.
+- For local development on Windows where you want low overhead and native tooling, install Redis inside WSL and use the local scripts. The local scripts call into WSL and will start Redis as a daemon there.
+
+How to verify Redis is running
+
+- From PowerShell (if using Docker container named `redis-local` or `redis-test`):
+  ```powershell
+  docker exec -it redis-local redis-cli ping
+  # or
+  redis-cli -h 127.0.0.1 -p 6379 ping
+  ```
+- From WSL:
+  ```bash
+  redis-cli -p 6379 ping
+  # should reply: PONG
+  ```
+
+Notes
+
+- The Docker scripts are idempotent and will remove stopped containers with the same name before starting a new one. The local scripts require a previously-installed Redis (WSL or Windows service) and will not install Redis for you.
+- If you prefer commands, the repository now includes a `Makefile` with handy targets:
+  - `make docker-up` — build images (if needed) and `docker compose up -d`
+  - `make docker-down` — `docker compose down`
+
+MySQL in Docker Compose
+
+The compose stack now includes a `mysql` service for local development. When you run `docker compose up -d`, a MySQL 8.0 container will be started with the database `paging_db` and a user `paging_user` / `paging_pass` (these are demo credentials). The app's environment in compose points Spring Boot at the container host `mysql`.
+
+Important notes:
+- Credentials in `docker-compose.yml` are for local development only. Do not commit production secrets — use environment files or CI secrets.
+- If you already run a MySQL instance on your machine (localhost:3306), either stop it or edit `docker-compose.yml` to map the container port to a different host port (for example `- "3307:3306"`) and update `SPRING_DATASOURCE_URL` accordingly.
+- The app is configured to run Flyway migrations on startup (if Flyway is enabled). The MySQL container will be used by the app on startup when using compose.
+
+
+
+
+
 ## Troubleshooting
 
 - "NoClassDefFoundError: PagedResponse" during startup: this was caused by DevTools RestartClassLoader in some environments. We removed DevTools to resolve it.

@@ -1,0 +1,13 @@
+target/
+**/target/
+**/.git
+**/.git/**
+**/.idea
+*.iml
+**/.mvn
+**/.settings
+**/logs
+Dockerfile
+docker-compose.yml
+**/src/test/**
+**/src/main/resources/logback-spring.xml

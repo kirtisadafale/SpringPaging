@@ -7,9 +7,15 @@
 
 local key = KEYS[1]
 local now = tonumber(ARGV[1])
-local capacity = tonumber(ARGV[2])
-local refill = tonumber(ARGV[3])
-local need = tonumber(ARGV[4])
+-- If the caller didn't provide a timestamp, fall back to Redis server time (seconds, microseconds)
+if now == nil then
+    local t = redis.call('TIME')
+    -- t[1] = seconds, t[2] = microseconds
+    now = tonumber(t[1]) * 1000 + math.floor(tonumber(t[2]) / 1000)
+end
+local capacity = tonumber(ARGV[2]) or 0
+local refill = tonumber(ARGV[3]) or 0
+local need = tonumber(ARGV[4]) or 1
 
 local data = redis.call('HMGET', key, 'tokens', 'last')
 local tokens = tonumber(data[1])
@@ -29,4 +35,5 @@ end
 redis.call('HMSET', key, 'tokens', tokens, 'last', now)
 redis.call('PEXPIRE', key, 86400000)
 
-return { allowed, tokens }
+-- Return stringified values so the Java Redis client decoders (ValueOutput) can handle them
+return { tostring(allowed), tostring(tokens) }

@@ -11,9 +11,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
-import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
@@ -25,13 +24,13 @@ import jakarta.servlet.http.HttpServletRequest;
 @ConditionalOnProperty(prefix = "app.rateLimiter", name = "type", havingValue = "redis")
 public class RedisRateLimiterService implements RateLimiter {
 
-    private final RedisTemplate<String, String> redis;
+    private final StringRedisTemplate redis;
     private final int capacity;
     private final double refillPerMillis;
     private String script;
-    private DefaultRedisScript<Object> redisScript;
+    private DefaultRedisScript<List> redisScript;
 
-    public RedisRateLimiterService(RedisTemplate<String, String> redis,
+    public RedisRateLimiterService(StringRedisTemplate redis,
             @Value("${app.rateLimit.requests:30}") int maxRequests,
             @Value("${app.rateLimit.windowSeconds:60}") int windowSeconds) {
         this.redis = redis;
@@ -54,8 +53,8 @@ public class RedisRateLimiterService implements RateLimiter {
         // prepare RedisScript wrapper to use the RedisTemplate.execute(script, keys, args...) helper
         redisScript = new DefaultRedisScript<>();
         redisScript.setScriptText(script);
-        // script returns a multi (list) with numeric values; use Object.class and handle the returned container manually
-        redisScript.setResultType(Object.class);
+        // script returns a multi (list) with string values
+        redisScript.setResultType(List.class);
     }
 
     public boolean isAllowed(HttpServletRequest request) {
@@ -74,25 +73,15 @@ public class RedisRateLimiterService implements RateLimiter {
         String key = "rate:bucket:" + clientId;
         long now = Instant.now().toEpochMilli();
         @SuppressWarnings("unchecked")
-        Object raw = redis.execute((RedisScript<Object>) redisScript, Collections.singletonList(key),
+        List<String> res = (List<String>) redis.execute(redisScript, Collections.singletonList(key),
                 Long.toString(now), Integer.toString(capacity), Double.toString(refillPerMillis), "1");
 
-        if (raw instanceof List) {
-            List<?> res = (List<?>) raw;
-            if (!res.isEmpty()) {
-                Object first = res.get(0);
-                if (first instanceof Number) {
-                    return ((Number) first).longValue() == 1L;
-                } else if (first instanceof byte[]) {
-                    try {
-                        String s = new String((byte[]) first, StandardCharsets.UTF_8);
-                        return Long.parseLong(s) == 1L;
-                    } catch (Exception ex) {
-                        return false;
-                    }
-                } else if (first instanceof String) {
-                    return Long.parseLong((String) first) == 1L;
-                }
+        if (res != null && !res.isEmpty()) {
+            String first = res.get(0);
+            try {
+                return Long.parseLong(first) == 1L;
+            } catch (Exception ex) {
+                return false;
             }
         }
         return false;

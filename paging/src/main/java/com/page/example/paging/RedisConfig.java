@@ -24,6 +24,13 @@ public class RedisConfig {
     public RedisTemplate<String, String> redisTemplate(LettuceConnectionFactory factory) {
         RedisTemplate<String, String> t = new RedisTemplate<>();
         t.setConnectionFactory(factory);
+        // Use String serializers so scripts that return strings are deserialized correctly
+        org.springframework.data.redis.serializer.StringRedisSerializer s = new org.springframework.data.redis.serializer.StringRedisSerializer();
+        t.setKeySerializer(s);
+        t.setValueSerializer(s);
+        t.setHashKeySerializer(s);
+        t.setHashValueSerializer(s);
+        t.afterPropertiesSet();
         return t;
     }
 }
