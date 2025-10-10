@@ -449,8 +449,10 @@ docker compose logs -f --tail 200 app
 
 start docker app service in interactive mode=> docker compose run --service-ports app
 
-to  start  in dev/prod
+To  start  in dev/prod
 docker compose run --service-ports --entrypoint "java -Dspring.profiles.active=prod -jar /app/app.jar" app
+to start in dev mode - this gives precedence over anything mentioned in DockerFile or docker-compose.yml
+docker compose run --service-ports --entrypoint "java -Dspring.profiles.active=dev -jar /app/app.jar" app
 
 to check if the migration is successfully applied 
 
