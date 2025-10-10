@@ -39,9 +39,11 @@ services:
     environment:
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/paging_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      SPRING_DATASOURCE_USERNAME: paging_user
-      SPRING_DATASOURCE_PASSWORD: paging_pass
+      # Allow overriding the JDBC URL from the environment; keep a reasonable default that points to the mysql service in compose
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/paging_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+      # Simple defaults are provided for local development; use a .env file to supply real credentials.
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-paging_user1}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-paging_pass1}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     ports:
       - "8080:8080"
@@ -50,10 +52,11 @@ services:
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: paging_db
-      MYSQL_USER: paging_user
-      MYSQL_PASSWORD: paging_pass
+      # Root password and user credentials must be supplied via environment variables or a .env file.
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-paging_db}
+      MYSQL_USER: ${MYSQL_USER:-paging_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3307:3306"
     volumes:

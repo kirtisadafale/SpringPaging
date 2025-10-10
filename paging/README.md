@@ -454,6 +454,20 @@ docker compose run --service-ports --entrypoint "java -Dspring.profiles.active=p
 to start in dev mode - this gives precedence over anything mentioned in DockerFile or docker-compose.yml
 docker compose run --service-ports --entrypoint "java -Dspring.profiles.active=dev -jar /app/app.jar" app
 
+
+Removing passowrds from docker compose 
+.env.example is created 
+1. Copy .env.example → .env and edit real secrets (or set environment variables outside Compose).
+at powershell
+>Set-Location .\paging
+>cp .env.example .env
+>notepad .env 
+2. Start the compose stack
+>cd paging
+>docker compose up -d --build
+3. Verify logs:
+docker compose logs -f --tail 200 app
+
 to check if the migration is successfully applied 
 
 1 Tail the app logs to confirm Flyway activity:
