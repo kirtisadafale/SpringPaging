@@ -45,7 +45,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     ports:
       - "8080:8080"
-    command: ["java","-jar","/app/app.jar"]
+    command: ["java","-Dspring.profiles.active=prod","-jar","/app/app.jar"]
 
   mysql:
     image: mysql:8.0

@@ -440,5 +440,22 @@ For mvn spring-boot:run prefer -Dspring-boot.run.profiles=prod (that is the plug
 If you use a launcher/IDE that reuses an existing process, ensure you restart the process after changing vmArgs or env vars.
 When running in Windows PowerShell remember ; is not needed between commands; use separate lines or ; if you do chain commands.
 
-Run BCryptGenrator
-java -cp "target\classes;C:\Users\anant\.m2\repository\org\mindrot\jbcrypt\0.4\jbcrypt-0.4.jar" com.page.example.paging.SimpleBcrypt admin_password
+
+Build a docker image 
+Set-Location C:\JavaRnD\SpringPaging\paging
+docker compose up -d --build
+To check logs
+docker compose logs -f --tail 200 app
+
+start docker app service in interactive mode=> docker compose run --service-ports app
+
+to  start  in dev/prod
+docker compose run --service-ports --entrypoint "java -Dspring.profiles.active=prod -jar /app/app.jar" app
+
+to check if the migration is successfully applied 
+
+1 Tail the app logs to confirm Flyway activity:
+
+Look for Flyway lines like "Successfully applied migration V2__create_users_and_authorities.sql" or any connection errors.
+Check flyway_schema_history in MySQL:
+
